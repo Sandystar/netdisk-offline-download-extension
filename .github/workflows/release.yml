@@ -1,0 +1,86 @@
+name: Release extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: extension-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate version and release target
+        id: version
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = [string](Get-Content manifest.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){0,3}$') { throw 'Invalid extension version' }
+          $tag = "v$version"
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne $tag) {
+            throw "Tag must match manifest.json version: $tag"
+          }
+          $head = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve HEAD' }
+          $tags = @(git tag --list $tag)
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot list tags' }
+          if ($tags -contains $tag) {
+            $tagCommit = git rev-list -n 1 $tag
+            if ($LASTEXITCODE -ne 0 -or $tagCommit -ne $head) { throw 'Existing version tag points to another commit; bump the version' }
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "commit=$head" >> $env:GITHUB_OUTPUT
+      - name: Check and package
+        run: ./scripts/release.ps1
+      - name: Publish GitHub Release
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_COMMIT: ${{ steps.version.outputs.commit }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archives = @(Get-ChildItem dist -Filter '*.zip' -File)
+          if ($archives.Count -ne 1) { throw 'Expected exactly one release archive in clean checkout' }
+          $assets = @($archives[0].FullName, "$($archives[0].FullName).sha256")
+          foreach ($asset in $assets) { if (!(Test-Path -LiteralPath $asset)) { throw "Missing asset: $asset" } }
+          # Never overwrite an already published release. A failed upload leaves a
+          # draft that can be completed by rerunning this workflow.
+          $existing = gh release view $env:RELEASE_TAG --json isDraft --jq .isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            if ($existing -ne 'true') { throw 'This version is already published; increment manifest.json version' }
+            $oldAssets = @(gh release view $env:RELEASE_TAG --json assets --jq '.assets[].name')
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect draft assets' }
+            foreach ($name in $oldAssets) {
+              if ($name -match '^netdisk-offline-download-extension-v.+\.zip(\.sha256)?$') {
+                gh release delete-asset $env:RELEASE_TAG $name --yes
+                if ($LASTEXITCODE -ne 0) { throw 'Cannot replace draft asset' }
+              }
+            }
+          } else {
+            gh release create $env:RELEASE_TAG --target $env:RELEASE_COMMIT --title $env:RELEASE_TAG --generate-notes --draft
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot create release draft' }
+          }
+          gh release upload $env:RELEASE_TAG @assets
+          if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed; release remains a draft' }
+          gh release edit $env:RELEASE_TAG --draft=false
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot publish release' }
+          "Published release: $env:RELEASE_TAG" >> $env:GITHUB_STEP_SUMMARY
