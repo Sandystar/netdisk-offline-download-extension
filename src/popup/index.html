@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>网盘离线下载助手</title>
+    <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+    <div class="tabs">
+        <button class="tab active" data-tab="batch">
+            <svg class="tabicon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9h3.2L12 17.2 7.8 12H11V3zm-6.5 15h15v2h-15v-2z"/></svg>
+            批量离线下载
+        </button>
+        <button class="tab" data-tab="settings">
+            <svg class="tabicon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 .1-1 7.6 7.6 0 0 0-.1-1l2.1-1.6a.5.5 0 0 0 .1-.7l-2-3.4a.5.5 0 0 0-.6-.2l-2.5 1a7.7 7.7 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7c-.6.2-1.2.6-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.4a.5.5 0 0 0 .1.7L4.5 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.7l2 3.4c.1.2.4.3.6.2l2.5-1c.5.4 1.1.8 1.7 1l.4 2.6c0 .3.2.5.5.5h4c.2 0 .5-.2.5-.4l.4-2.7c.6-.2 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 0 0-.1-.7L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+            设置
+        </button>
+    </div>
+
+    <div id="tab-batch" class="tabpane active"></div>
+
+    <div id="tab-settings" class="tabpane">
+        <div id="settings-body"></div>
+    </div>
+
+    <script src="../ui/panel.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>

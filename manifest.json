@@ -1,0 +1,63 @@
+{
+    "manifest_version": 3,
+    "name": "网盘离线下载助手",
+    "version": "1.0.3",
+    "description": "在任意网页识别磁力链接，一键离线下载到网盘，支持批量提交与保存目录设置。目前支持：123云盘 / PikPak",
+    "permissions": [
+        "storage",
+        "tabs"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "icons": {
+        "16": "src/icons/icon16.png",
+        "48": "src/icons/icon48.png",
+        "128": "src/icons/icon128.png"
+    },
+    "action": {
+        "default_popup": "src/popup/index.html",
+        "default_title": "网盘离线下载助手",
+        "default_icon": {
+            "16": "src/icons/icon16.png",
+            "48": "src/icons/icon48.png",
+            "128": "src/icons/icon128.png"
+        }
+    },
+    "background": {
+        "service_worker": "src/background/index.mjs",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://yun.123pan.cn/*"
+            ],
+            "js": [
+                "src/content/drive.js"
+            ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://mypikpak.com/*",
+                "https://*.mypikpak.com/*"
+            ],
+            "js": [
+                "src/content/drive.js"
+            ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": [
+                "src/ui/panel.js",
+                "src/content/magnet.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ]
+}
