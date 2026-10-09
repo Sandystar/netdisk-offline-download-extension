@@ -89,9 +89,7 @@
                 syncBtn.disabled = true;
                 try {
                     const r = await send({ cmd: 'syncNow', provider: p.key });
-                    toast(r.opened
-                        ? '已打开' + p.label + '页面，登录后会自动同步'
-                        : '已通知网盘页面同步，请稍候...');
+                    toast(r.opened ? '已打开' + p.label + '页面，登录后可同步' : r.reloading ? '正在刷新网盘页面，请稍候再同步' : p.key === 'pan115' ? '115登录状态和离线签名已验证' : '已通知网盘页面同步，请稍候...');
                     setTimeout(() => { refresh(); if (batchPanel) batchPanel.refresh(); }, r.opened ? 4000 : 1500);
                 } catch (e) {
                     toast('❌ ' + e.message);
@@ -119,6 +117,10 @@
             } else {
                 dirInput.placeholder = '未设置，使用网盘默认目录';
             }
+            if (p.key === 'pan115') {
+                dirInput.title = '115文件夹网址中的cid；0为根目录，留空使用115默认云下载目录';
+                dirInput.inputMode = 'numeric';
+            }
             dirInput.addEventListener('input', () => {
                 dirDrafts[p.key] = dirInput.value;
                 dirDirty[p.key] = true;
@@ -141,6 +143,9 @@
             };
             dirRow.appendChild(saveBtn);
             sec.appendChild(dirRow);
+            if (p.key === 'pan115') {
+                sec.appendChild(el('div', 'pmeta', '填写文件夹网址中的 cid；0 为根目录，留空使用115默认云下载目录。下载时请保留115页面。'));
+            }
 
             settingsBody.appendChild(sec);
         }

@@ -1,6 +1,13 @@
-// background.mjs — MV3 service worker（module）：所有跨源 API 请求在这里发起
+// background.mjs — MV3 service worker（module）：统一调度网盘同步与离线提交
 import * as P from '../core/offline.mjs';
 import { getAdapter } from '../providers/index.mjs';
+import { refreshSession } from '../providers/pan115.mjs';
+
+chrome.cookies.onChanged.addListener(({ cookie }) => {
+    if ((cookie.domain === '115.com' || cookie.domain === '.115.com') && ['UID', 'CID', 'SEID'].includes(cookie.name)) {
+        refreshSession(true).catch(console.error);
+    }
+});
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     (async () => {
@@ -11,6 +18,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 return P.submitOffline(msg);
             case 'syncNow':
                 return P.syncNow(msg.provider);
+            case 'sync115':
+                return P.sync115();
             case 'setDir':
                 await P.setProviderDir(msg.provider, msg.dirId);
                 return { ok: true };

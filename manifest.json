@@ -1,11 +1,12 @@
 {
     "manifest_version": 3,
     "name": "网盘离线下载助手",
-    "version": "1.0.3",
-    "description": "在任意网页识别磁力链接，一键离线下载到网盘，支持批量提交与保存目录设置。目前支持：123云盘 / PikPak",
+    "version": "1.0.4",
+    "description": "在任意网页识别磁力链接，一键离线下载到网盘，支持批量提交与保存目录设置。目前支持：123云盘 / PikPak / 115网盘",
     "permissions": [
         "storage",
-        "tabs"
+        "tabs",
+        "cookies"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -36,6 +37,13 @@
             "js": [
                 "src/content/drive.js"
             ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://115.com/*"
+            ],
+            "js": ["src/content/pan115.js"],
             "run_at": "document_idle"
         },
         {

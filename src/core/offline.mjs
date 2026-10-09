@@ -1,15 +1,19 @@
 import { adapters, PROVIDERS, getAdapter } from '../providers/index.mjs';
 import { getProviderState, saveProviderDir } from './storage.mjs';
 import { errMessage } from './http.mjs';
+import { refreshSession, syncSession } from '../providers/pan115.mjs';
 export { PROVIDERS };
 export { getProviderState, saveProviderState } from './storage.mjs';
 
+export const sync115 = syncSession;
 export async function setProviderDir(key, dirId) {
     getAdapter(key);
+    if (key === 'pan115' && dirId && !/^\d+$/.test(dirId.trim())) throw new Error('115文件夹ID必须是数字（网址中的cid）');
     await saveProviderDir(key, dirId);
 }
 
 export async function getStatus() {
+    await refreshSession();
     const entries = await Promise.all(Object.entries(adapters).map(async ([key, adapter]) => {
         const state = await getProviderState(key);
         return [key, {
@@ -51,7 +55,7 @@ export async function submitOffline(msg = {}) {
                 } catch (error) {
                     result.fail++;
                     result.detail.push({ link, ok: false, message: errMessage(error) });
-                    if (error.code === 'NO_TOKEN' || error.code === 'TOKEN_EXPIRED') {
+                    if (['NO_TOKEN', 'TOKEN_EXPIRED', 'VERIFICATION_REQUIRED', 'REQUEST_UNCERTAIN'].includes(error.code)) {
                         result.tokenError = errMessage(error);
                         break;
                     }
@@ -65,6 +69,7 @@ export async function submitOffline(msg = {}) {
 }
 
 export async function syncNow(key) {
+    if (key === 'pan115') return syncSession();
     const { config } = getAdapter(key);
     const tabs = await chrome.tabs.query({ url: config.tabPatterns });
     if (!tabs.length) {
